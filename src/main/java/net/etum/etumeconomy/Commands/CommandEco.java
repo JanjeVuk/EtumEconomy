@@ -1,21 +1,24 @@
-package net.etum.etumeconomy.Commands;
+package net.etum.etumeconomy.commands;
 
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Color;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
+import org.bukkit.entity.Horse;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class CommandEco implements TabExecutor {
 
-    private Economy economy;
+    private final Economy economy;
 
     public CommandEco(Economy economy) {
         this.economy = economy;
@@ -24,17 +27,17 @@ public class CommandEco implements TabExecutor {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command cmd, @NotNull String label, @NotNull String[] args) {
         if (args.length < 1) {
-            // Affichez un message d'aide si la commande n'a pas suffisamment d'arguments.
-            // Par exemple: /eco give <joueur> <montant>
-            sender.sendMessage(ChatColor.RED + "Utilisation: /eco <give/set/take/reset> <joueur> <montant>");
+            // Display a help message if the command has insufficient arguments.
+            // Example: /eco give <player> <amount>
+            sender.sendMessage(ChatColor.RED + "Usage: /eco <give/set/take/reset> <player> <amount>");
             return true;
         }
 
         String subCommand = args[0].toLowerCase();
 
-        if (subCommand.equals("give") || subCommand.equals("set") || subCommand.equals("take") || subCommand.equals("reset")) {
+        if (Arrays.asList("give", "set", "take", "reset").contains(subCommand)) {
             if (args.length < 3) {
-                sender.sendMessage(ChatColor.RED + "Utilisation: /eco " + subCommand + " <joueur> <montant>");
+                sender.sendMessage(ChatColor.RED + "Usage: /eco " + subCommand + " <player> <amount>");
                 return true;
             }
 
@@ -42,7 +45,7 @@ public class CommandEco implements TabExecutor {
             Player targetPlayer = Bukkit.getPlayer(playerName);
 
             if (targetPlayer == null || !targetPlayer.isOnline()) {
-                sender.sendMessage(ChatColor.RED + "Le joueur spécifié n'est pas en ligne.");
+                sender.sendMessage(ChatColor.RED + "The specified player is not online.");
                 return true;
             }
 
@@ -50,31 +53,31 @@ public class CommandEco implements TabExecutor {
             try {
                 amount = Double.parseDouble(args[2]);
             } catch (NumberFormatException e) {
-                sender.sendMessage(ChatColor.RED + "Le montant doit être un nombre valide.");
+                sender.sendMessage(ChatColor.RED + "The amount must be a valid number.");
                 return true;
             }
 
             switch (subCommand) {
                 case "give":
                     economy.depositPlayer(targetPlayer, amount);
-                    sender.sendMessage(ChatColor.GREEN + "Vous avez donné " + amount + " à " + targetPlayer.getName());
+                    sender.sendMessage(ChatColor.GREEN + "You have given " + amount + " to " + targetPlayer.getName());
                     break;
                 case "set":
                     economy.withdrawPlayer(targetPlayer, economy.getBalance(targetPlayer));
                     economy.depositPlayer(targetPlayer, amount);
-                    sender.sendMessage(ChatColor.GREEN + "Vous avez défini le solde de " + targetPlayer.getName() + " à " + amount);
+                    sender.sendMessage(ChatColor.GREEN + "You have set the balance of " + targetPlayer.getName() + " to " + amount);
                     break;
                 case "take":
                     economy.withdrawPlayer(targetPlayer, amount);
-                    sender.sendMessage(ChatColor.GREEN + "Vous avez pris " + amount + " de " + targetPlayer.getName());
+                    sender.sendMessage(ChatColor.GREEN + "You have taken " + amount + " from " + targetPlayer.getName());
                     break;
                 case "reset":
                     economy.withdrawPlayer(targetPlayer, economy.getBalance(targetPlayer));
-                    sender.sendMessage(ChatColor.GREEN + "Vous avez réinitialisé le solde de " + targetPlayer.getName() + " à 0");
+                    sender.sendMessage(ChatColor.GREEN + "You have reset the balance of " + targetPlayer.getName() + " to 0");
                     break;
             }
         } else {
-            sender.sendMessage(ChatColor.RED + "Commande inconnue. Utilisation: /eco <give/set/take/reset> <joueur> <montant>");
+            sender.sendMessage(ChatColor.RED + "Unknown command. Usage: /eco <give/set/take/reset> <player> <amount>");
         }
 
         return true;
@@ -82,24 +85,16 @@ public class CommandEco implements TabExecutor {
 
     @Override
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command cmd, @NotNull String label, @NotNull String[] args) {
+        List<String> completions = new ArrayList<>();
+
         if (args.length == 1) {
-            // Si l'utilisateur n'a tapé qu'une partie de la commande, proposez les sous-commandes possibles
-            List<String> subCommands = new ArrayList<>();
-            subCommands.add("give");
-            subCommands.add("set");
-            subCommands.add("take");
-            subCommands.add("reset");
-            return subCommands;
-        } else if (args.length == 2 && args[0].equalsIgnoreCase("give")) {
-            // Si la sous-commande est 'give', proposez les noms des joueurs en ligne
-            List<String> playerNames = new ArrayList<>();
-            for (Player player : Bukkit.getOnlinePlayers()) {
-                playerNames.add(player.getName());
-            }
-            return playerNames;
+            // If the user has only typed part of the command, suggest possible sub-commands
+            completions.addAll(Arrays.asList("give", "set", "take", "reset"));
+        } else if (args.length == 2) {
+            // Suggest names of online players
+            completions.addAll(Bukkit.getOnlinePlayers().stream().map(Player::getName).toList());
         }
 
-        // Pour d'autres cas, retournez une liste vide pour ne pas suggérer de complétions automatiques
-        return new ArrayList<>();
+        return completions;
     }
 }
