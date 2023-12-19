@@ -1,5 +1,6 @@
-package net.etum.etumeconomy;
+package net.etum.etumeconomy.Manager;
 
+import net.etum.etumeconomy.Main;
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.economy.EconomyResponse;
 import org.bukkit.Bukkit;
@@ -13,9 +14,9 @@ import java.util.Map;
 public class EcoManager implements Economy {
 
 
-    private final HashMap<String, Integer> balances = new HashMap<>();
+    private final String currencyNameSingular = "Helok";
+    private Map<String, Integer> balances;
 
-    private final String currencyNameSingular = "Dollar";
 
     @Override
     public boolean isEnabled() {
@@ -54,7 +55,7 @@ public class EcoManager implements Economy {
 
     @Override
     public boolean hasAccount(String playerName) {
-        return balances.containsKey(playerName);
+        return false;
     }
 
     @Override
@@ -73,8 +74,8 @@ public class EcoManager implements Economy {
     }
 
     @Override
-    public double getBalance(String s) {
-        return 0;
+    public double getBalance(String playerName) {
+        return balances.get(playerName);
     }
 
     @Override
@@ -113,7 +114,7 @@ public class EcoManager implements Economy {
     }
 
     @Override
-    public EconomyResponse withdrawPlayer(String s, double v) {
+    public EconomyResponse withdrawPlayer(String playerName, double amount) {
         return null;
     }
 

@@ -1,5 +1,8 @@
 package net.etum.etumeconomy;
 
+import net.etum.etumeconomy.Listeners.Commands;
+import net.etum.etumeconomy.Listeners.Events;
+import net.etum.etumeconomy.Manager.EcoManager;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -28,9 +31,13 @@ public class Main extends JavaPlugin {
         //setup default config if not exist
         saveDefaultConfig();
 
+        new Events(this);
+        new Commands(this);
+
     }
 
     private boolean setupEconomy() {
+
         if (getServer().getPluginManager().getPlugin("Vault") == null) {
             return false;
         }
@@ -43,6 +50,7 @@ public class Main extends JavaPlugin {
         }
         econ = rsp.getProvider();
         return true;
+
     }
 
 

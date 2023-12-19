@@ -1,2 +1,16 @@
-#LOCAL / REDIS
-system: LOCAL
+redis:
+  host: "localhost"  # Mettez l'adresse IP ou le nom d'hôte de votre serveur Redis
+  port: 6379         # Mettez le port Redis approprié
+
+storage:
+  type: "local"      # "local" pour stocker en local, "redis" pour stocker sur un serveur Redis
+
+information_storage:
+  format: "yaml"     # "yaml" pour stocker dans un fichier YAML, "mysql" pour stocker dans MySQL
+
+mysql:
+  host: "localhost"  # Mettez l'adresse IP ou le nom d'hôte de votre serveur MySQL
+  port: 3306         # Mettez le port MySQL approprié
+  user: "username"   # Mettez le nom d'utilisateur MySQL
+  password: "password" # Mettez le mot de passe MySQL
+  database: "database_name" # Mettez le nom de la base de données MySQL
