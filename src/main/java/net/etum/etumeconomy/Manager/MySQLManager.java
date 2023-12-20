@@ -9,47 +9,47 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
- * Cette classe gère les opérations de base sur une base de données MySQL.
+ * This class manages basic operations on a MySQL database.
  */
 public class MySQLManager {
 
-    // URL de connexion à la base de données MySQL
+    // Connection URL to the MySQL database
     private final String url;
 
-    // Nom d'utilisateur pour la connexion à la base de données MySQL
+    // Username for the MySQL database connection
     private final String user;
 
-    // Mot de passe pour la connexion à la base de données MySQL
+    // Password for the MySQL database connection
     private final String password;
 
     /**
-     * Constructeur de la classe MySQLManager.
+     * Constructor for the MySQLManager class.
      *
-     * @param host     Adresse IP ou nom d'hôte du serveur MySQL
-     * @param port     Port du serveur MySQL
-     * @param user     Nom d'utilisateur MySQL
-     * @param password Mot de passe MySQL
-     * @param database Nom de la base de données MySQL
+     * @param host     IP address or hostname of the MySQL server
+     * @param port     Port of the MySQL server
+     * @param user     MySQL username
+     * @param password MySQL password
+     * @param database MySQL database name
      */
     public MySQLManager(String host, int port, String user, String password, String database) {
-        // Construction de l'URL de connexion à la base de données MySQL
+        // Constructing the URL for the MySQL database connection
         this.url = "jdbc:mysql://" + host + ":" + port + "/" + database;
         this.user = user;
         this.password = password;
     }
 
     /**
-     * Insère ou met à jour une entrée dans la table spécifiée.
+     * Inserts or updates an entry in the specified table.
      *
-     * @param tableName    Nom de la table MySQL
-     * @param keyColumn    Nom de la colonne pour la clé
-     * @param valueColumn  Nom de la colonne pour la valeur
-     * @param key          Clé à insérer ou mettre à jour
-     * @param value        Valeur associée à la clé
+     * @param tableName   Name of the MySQL table
+     * @param keyColumn   Name of the column for the key
+     * @param valueColumn Name of the column for the value
+     * @param key         Key to insert or update
+     * @param value       Value associated with the key
      */
     public void insertOrUpdate(String tableName, String keyColumn, String valueColumn, String key, String value) {
         try (Connection connection = DriverManager.getConnection(url, user, password)) {
-            // Requête SQL pour insérer ou mettre à jour une entrée dans la table
+            // SQL query to insert or update an entry in the table
             String query = "INSERT INTO " + tableName + " (" + keyColumn + ", " + valueColumn + ") VALUES (?, ?) " +
                     "ON DUPLICATE KEY UPDATE " + valueColumn + "=?";
             try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
@@ -59,23 +59,23 @@ public class MySQLManager {
                 preparedStatement.executeUpdate();
             }
         } catch (SQLException e) {
-            // En cas d'erreur, afficher un avertissement dans la console Bukkit
+            // In case of an error, display a warning in the Bukkit console
             Bukkit.getLogger().warning(e.getMessage());
         }
     }
 
     /**
-     * Récupère la valeur associée à une clé dans la table spécifiée.
+     * Retrieves the value associated with a key in the specified table.
      *
-     * @param tableName   Nom de la table MySQL
-     * @param keyColumn   Nom de la colonne pour la clé
-     * @param valueColumn Nom de la colonne pour la valeur
-     * @param key         Clé à rechercher
-     * @return La valeur associée à la clé, ou null si la clé n'est pas trouvée
+     * @param tableName   Name of the MySQL table
+     * @param keyColumn   Name of the column for the key
+     * @param valueColumn Name of the column for the value
+     * @param key         Key to search for
+     * @return The value associated with the key, or null if the key is not found
      */
     public String get(String tableName, String keyColumn, String valueColumn, String key) {
         try (Connection connection = DriverManager.getConnection(url, user, password)) {
-            // Requête SQL pour sélectionner la valeur associée à une clé
+            // SQL query to select the value associated with a key
             String query = "SELECT " + valueColumn + " FROM " + tableName + " WHERE " + keyColumn + "=?";
             try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
                 preparedStatement.setString(1, key);
@@ -86,7 +86,7 @@ public class MySQLManager {
                 }
             }
         } catch (SQLException e) {
-            // En cas d'erreur, afficher un avertissement dans la console Bukkit
+            // In case of an error, display a warning in the Bukkit console
             Bukkit.getLogger().warning(e.getMessage());
         }
         return null;

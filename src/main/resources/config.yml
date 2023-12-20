@@ -1,6 +1,8 @@
 redis:
   host: "localhost"  # Mettez l'adresse IP ou le nom d'hôte de votre serveur Redis
   port: 6379         # Mettez le port Redis approprié
+  password: password # Mettez le Password Redis approprié
+  timeout: 2000  # Mettez le Timeout Redis approprié
 
 storage:
   type: "local"      # "local" pour stocker en local, "redis" pour stocker sur un serveur Redis

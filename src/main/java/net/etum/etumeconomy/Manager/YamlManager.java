@@ -1,5 +1,6 @@
 package net.etum.etumeconomy.Manager;
 
+import org.bukkit.Bukkit;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.FileWriter;
@@ -9,80 +10,80 @@ import java.nio.file.Path;
 import java.util.Map;
 
 /**
- * Cette classe gère la lecture et l'écriture de données au format YAML.
- * Elle utilise la bibliothèque SnakeYAML pour traiter les fichiers YAML.
+ * This class manages reading and writing data in YAML format.
+ * It uses the SnakeYAML library to handle YAML files.
  */
 public class YamlManager {
 
-    // Chemin du fichier YAML
-    private final Path filePath;
+    // Path to the YAML file
+    private final Path yamlFilePath;
 
-    // Instance de l'analyseur YAML de SnakeYAML
+    // Instance of the SnakeYAML parser
     private final Yaml yaml;
 
     /**
-     * Constructeur de la classe YamlManager.
+     * Constructor for the YamlManager class.
      *
-     * @param filePath Chemin du fichier YAML à gérer.
+     * @param yamlFilePath Path to the YAML file to manage.
      */
-    public YamlManager(Path filePath) {
-        this.filePath = filePath;
+    public YamlManager(Path yamlFilePath) {
+        this.yamlFilePath = yamlFilePath;
         this.yaml = new Yaml();
     }
 
     /**
-     * Enregistre les données fournies dans le fichier YAML spécifié.
+     * Saves the provided data to the specified YAML file.
      *
-     * @param data Données à enregistrer dans le fichier YAML.
+     * @param data Data to save to the YAML file.
      */
     public void save(Map<String, Object> data) {
-        try (FileWriter writer = new FileWriter(filePath.toFile())) {
-            // Utilisation de SnakeYAML pour convertir les données en format YAML et les écrire dans le fichier
+        try (FileWriter writer = new FileWriter(yamlFilePath.toFile())) {
+            // Use SnakeYAML to convert data to YAML format and write it to the file
             yaml.dump(data, writer);
         } catch (IOException e) {
-            e.printStackTrace();
+            Bukkit.getLogger().warning(e.getMessage());
         }
     }
 
     /**
-     * Charge les données à partir du fichier YAML spécifié.
+     * Loads data from the specified YAML file.
      *
-     * @return Les données chargées depuis le fichier YAML, ou null si le fichier n'existe pas.
+     * @return The data loaded from the YAML file, or null if the file does not exist.
      */
     public Map<String, Object> load() {
         try {
-            // Vérifie si le fichier YAML existe
-            if (Files.exists(filePath)) {
-                // Utilisation de SnakeYAML pour charger les données à partir du fichier YAML
-                return yaml.load(Files.newBufferedReader(filePath));
+            // Check if the YAML file exists
+            if (Files.exists(yamlFilePath)) {
+                // Use SnakeYAML to load data from the YAML file
+                return yaml.load(Files.newBufferedReader(yamlFilePath));
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            Bukkit.getLogger().warning(e.getMessage());
         }
         return null;
     }
 
     /**
-     * Vérifie si le fichier YAML existe.
+     * Checks if the YAML file exists.
      *
-     * @return true si le fichier YAML existe, sinon false.
+     * @return true if the YAML file exists, otherwise false.
      */
     public boolean exists() {
-        return Files.exists(filePath);
+        return Files.exists(yamlFilePath);
     }
 
     /**
-     * Supprime le fichier YAML.
+     * Deletes the YAML file.
      *
-     * @return true si le fichier YAML a été supprimé avec succès, sinon false.
+     * @return true if the YAML file was successfully deleted, otherwise false.
      */
     public boolean delete() {
         try {
-            // Supprime le fichier YAML s'il existe
-            Files.deleteIfExists(filePath);
+            // Delete the YAML file if it exists
+            Files.deleteIfExists(yamlFilePath);
             return true;
         } catch (IOException e) {
-            e.printStackTrace();
+            Bukkit.getLogger().warning(e.getMessage());
             return false;
         }
     }

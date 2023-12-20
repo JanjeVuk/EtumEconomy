@@ -1,13 +1,12 @@
 package net.etum.etumeconomy.Manager;
 
-import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 
 /**
- * Cette classe gère la configuration du plugin.
+ * This class manages the configuration of the plugin.
  */
 public class ConfigManager {
 
@@ -18,9 +17,9 @@ public class ConfigManager {
     private ConfigurationSection mysqlConfig;
 
     /**
-     * Constructeur de la classe ConfigManager.
+     * Constructor for the ConfigManager class.
      *
-     * @param plugin Instance du plugin
+     * @param plugin The plugin instance
      */
     public ConfigManager(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -28,24 +27,22 @@ public class ConfigManager {
     }
 
     /**
-     * Charge la configuration depuis le fichier de configuration.
+     * Loads the configuration from the configuration file.
      */
     private void loadConfig() {
-        // Vérifie si le dossier du plugin existe, sinon le crée
-        if (!plugin.getDataFolder().exists()) {
-            if(!plugin.getDataFolder().mkdirs()){
-                Bukkit.getLogger().warning("Le dossier ne peut être créé");
-                return;
-            }
+        // Check if the plugin folder exists, create it if not
+        if (!plugin.getDataFolder().exists() && !plugin.getDataFolder().mkdirs()) {
+            // Handle the folder creation error
+            return;
         }
 
-        // Crée le fichier de configuration s'il n'existe pas
+        // Create the configuration file if it does not exist
         File configFile = new File(plugin.getDataFolder(), "config.yml");
         if (!configFile.exists()) {
             plugin.saveResource("config.yml", false);
         }
 
-        // Charge la configuration depuis le fichier YAML
+        // Load the configuration from the YAML file
         this.redisConfig = plugin.getConfig().getConfigurationSection("redis");
         this.storageConfig = plugin.getConfig().getConfigurationSection("storage");
         this.informationStorageConfig = plugin.getConfig().getConfigurationSection("information_storage");
@@ -53,81 +50,99 @@ public class ConfigManager {
     }
 
     /**
-     * Obtient l'hôte Redis depuis la configuration.
+     * Gets the Redis host from the configuration.
      *
-     * @return L'hôte Redis
+     * @return The Redis host
      */
     public String getRedisHost() {
         return redisConfig.getString("host");
     }
 
     /**
-     * Obtient le port Redis depuis la configuration.
+     * Gets the Redis port from the configuration.
      *
-     * @return Le port Redis
+     * @return The Redis port
      */
     public int getRedisPort() {
         return redisConfig.getInt("port", 6379);
     }
 
     /**
-     * Obtient le type de stockage depuis la configuration.
+     * Gets the Redis password from the configuration.
      *
-     * @return Le type de stockage
+     * @return The Redis password
+     */
+    public String getRedisPassword() {
+        return redisConfig.getString("password");
+    }
+
+    /**
+     * Gets the Redis timeout from the configuration.
+     *
+     * @return The Redis timeout
+     */
+    public int getRedisTimeout() {
+        return redisConfig.getInt("timeout", 2000);
+    }
+
+    /**
+     * Gets the storage type from the configuration.
+     *
+     * @return The storage type
      */
     public String getStorageType() {
         return storageConfig.getString("type");
     }
 
     /**
-     * Obtient le format de stockage d'informations depuis la configuration.
+     * Gets the information storage format from the configuration.
      *
-     * @return Le format de stockage d'informations
+     * @return The information storage format
      */
     public String getInformationStorageFormat() {
         return informationStorageConfig.getString("format");
     }
 
     /**
-     * Obtient l'hôte MySQL depuis la configuration.
+     * Gets the MySQL host from the configuration.
      *
-     * @return L'hôte MySQL
+     * @return The MySQL host
      */
     public String getMysqlHost() {
         return mysqlConfig.getString("host");
     }
 
     /**
-     * Obtient le port MySQL depuis la configuration.
+     * Gets the MySQL port from the configuration.
      *
-     * @return Le port MySQL
+     * @return The MySQL port
      */
     public int getMysqlPort() {
         return mysqlConfig.getInt("port", 3306);
     }
 
     /**
-     * Obtient le nom d'utilisateur MySQL depuis la configuration.
+     * Gets the MySQL username from the configuration.
      *
-     * @return Le nom d'utilisateur MySQL
+     * @return The MySQL username
      */
     public String getMysqlUser() {
         return mysqlConfig.getString("user");
     }
 
     /**
-     * Obtient le mot de passe MySQL depuis la configuration.
+     * Gets the MySQL password from the configuration.
      *
-     * @return Le mot de passe MySQL
+     * @return The MySQL password
      */
     public String getMysqlPassword() {
         return mysqlConfig.getString("password");
     }
 
     /**
-     * Obtient le nom de la base de données MySQL depuis la configuration.
+     * Gets the MySQL database name from the configuration.
      *
-     * @return Le nom de la base de données MySQL
+     * @return The MySQL database name
      */
     public String getMysqlDatabase() {
         return mysqlConfig.getString("database");
