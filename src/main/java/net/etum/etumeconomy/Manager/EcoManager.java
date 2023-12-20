@@ -132,18 +132,45 @@ public class EcoManager implements Economy {
     public EconomyResponse withdrawPlayer(String playerName, double value) {
         switch (config.getStorageType()) {
             case "LOCAL":
+                double playerBalance = getBalance(playerName);
+
+                if (playerBalance < value) {
+                    // The player does not have enough money
+                    return new EconomyResponse(0, playerBalance, EconomyResponse.ResponseType.FAILURE, "Player does not have enough money");
+                }
+
+                // Withdrawal successful
+                balances.put(playerName, playerBalance - value);
+                return new EconomyResponse(value, balances.get(playerName), EconomyResponse.ResponseType.SUCCESS, null);
+
             case "REDIS":
-                // Utilise la classe RedisManager pour effectuer le retrait
-                return new EconomyResponse(0, 0, EconomyResponse.ResponseType.FAILURE, "Stockage non pris en charge");
+                // Use the RedisManager class to perform the withdrawal
+                if (redis.hasAccount(playerName)) {
+                    double playerRedisBalance = redis.getBalance(playerName);
+
+                    if (playerRedisBalance < value) {
+                        // The player does not have enough money in Redis
+                        return new EconomyResponse(0, playerRedisBalance, EconomyResponse.ResponseType.FAILURE, "Player does not have enough money");
+                    }
+
+                    // Withdrawal successful from Redis
+                    redis.setBalance(playerName, playerRedisBalance - value);
+                    return new EconomyResponse(value, redis.getBalance(playerName), EconomyResponse.ResponseType.SUCCESS, null);
+                } else {
+                    // Player account not found in Redis
+                    return new EconomyResponse(0, 0, EconomyResponse.ResponseType.FAILURE, "Player account not found in Redis");
+                }
+
             default:
-                // Retourne une réponse d'échec pour les autres modes de stockage
-                return new EconomyResponse(0, 0, EconomyResponse.ResponseType.FAILURE, "Stockage non pris en charge");
+                // Unsupported storage type
+                return new EconomyResponse(0, 0, EconomyResponse.ResponseType.FAILURE, "Unsupported storage type");
         }
     }
 
+
     @Override
     public EconomyResponse withdrawPlayer(OfflinePlayer offlinePlayer, double value) {
-        return null;
+        return withdrawPlayer(offlinePlayer.getPlayer(), value);
     }
 
     @Override
