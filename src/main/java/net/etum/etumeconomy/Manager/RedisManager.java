@@ -21,10 +21,27 @@ public class RedisManager {
     // Jedis pool instance to communicate with the Redis server
     private JedisPool jedisPool;
 
+    // Flag to indicate whether to use Redis storage or not
+    private boolean useRedis;
+
     /**
-     * Constructor for the RedisManager class with a password.
+     * Constructor for the RedisManager class.
      */
     public RedisManager(ConfigManager configManager) {
+        // Check the storage type
+        String storageType = configManager.getStorageType();
+        useRedis = storageType.equalsIgnoreCase("REDIS");
+
+        // If using Redis, initialize the Jedis pool
+        if (useRedis) {
+            initializeJedisPool(configManager);
+        }
+    }
+
+    /**
+     * Initializes the Jedis pool if using Redis storage.
+     */
+    private void initializeJedisPool(ConfigManager configManager) {
         // Jedis pool configuration
         JedisPoolConfig poolConfig = new JedisPoolConfig();
 
@@ -49,9 +66,7 @@ public class RedisManager {
                 close();
 
                 // Reconnect the connection
-                // Jedis pool configuration
-                JedisPoolConfig poolConfig = new JedisPoolConfig();
-                jedisPool = new JedisPool(poolConfig, config.getRedisHost(), config.getRedisPort(), config.getRedisTimeout(), config.getRedisPassword());
+                initializeJedisPool(config);
 
                 // Log an info message
                 logger.info("Reconnection to Redis successful.");

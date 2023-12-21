@@ -14,10 +14,13 @@ public class EcoManager implements Economy {
 
     private final String currencyNameSingular = "Helok";
     private final HashMap<String, Double> balances = new HashMap<>();
+    private final ConfigManager config;
+    private final RedisManager redis;
 
-    ConfigManager config = new ConfigManager(Main.getInstance());
-    RedisManager redis = new RedisManager(config);
-
+    public EcoManager() {
+        this.config = Main.getConfigManager();
+        this.redis = new RedisManager(config);
+    }
 
     @Override
     public boolean isEnabled() {
@@ -56,11 +59,14 @@ public class EcoManager implements Economy {
 
     @Override
     public boolean hasAccount(String playerName) {
-        return switch (config.getStorageType()) {
-            case "LOCAL" -> balances.containsKey(playerName);
-            case "REDIS" -> redis.hasAccount(playerName);
-            default -> false;
-        };
+        switch (config.getStorageType()) {
+            case "LOCAL":
+                return balances.containsKey(playerName);
+            case "REDIS":
+                return redis.hasAccount(playerName);
+            default:
+                return false;
+        }
     }
 
     @Override
@@ -82,11 +88,14 @@ public class EcoManager implements Economy {
 
     @Override
     public double getBalance(String playerName) {
-        return switch (config.getStorageType()) {
-            case "LOCAL" -> balances.get(playerName);
-            case "REDIS" -> redis.getBalance(playerName);
-            default -> 0.0;
-        };
+        switch (config.getStorageType()) {
+            case "LOCAL":
+                return balances.getOrDefault(playerName, 0.0);
+            case "REDIS":
+                return redis.getBalance(playerName);
+            default:
+                return 0.0;
+        }
     }
 
     @Override
@@ -132,62 +141,101 @@ public class EcoManager implements Economy {
     public EconomyResponse withdrawPlayer(String playerName, double value) {
         switch (config.getStorageType()) {
             case "LOCAL":
-                double playerBalance = getBalance(playerName);
-
-                if (playerBalance < value) {
-                    // The player does not have enough money
-                    return new EconomyResponse(0, playerBalance, EconomyResponse.ResponseType.FAILURE, "Player does not have enough money");
-                }
-
-                // Withdrawal successful
-                balances.put(playerName, playerBalance - value);
-                return new EconomyResponse(value, balances.get(playerName), EconomyResponse.ResponseType.SUCCESS, null);
+                return withdrawLocal(playerName, value);
 
             case "REDIS":
-                // Use the RedisManager class to perform the withdrawal
-                if (redis.hasAccount(playerName)) {
-                    double playerRedisBalance = redis.getBalance(playerName);
-
-                    if (playerRedisBalance < value) {
-                        // The player does not have enough money in Redis
-                        return new EconomyResponse(0, playerRedisBalance, EconomyResponse.ResponseType.FAILURE, "Player does not have enough money");
-                    }
-
-                    // Withdrawal successful from Redis
-                    redis.setBalance(playerName, playerRedisBalance - value);
-                    return new EconomyResponse(value, redis.getBalance(playerName), EconomyResponse.ResponseType.SUCCESS, null);
-                } else {
-                    // Player account not found in Redis
-                    return new EconomyResponse(0, 0, EconomyResponse.ResponseType.FAILURE, "Player account not found in Redis");
-                }
+                return withdrawRedis(playerName, value);
 
             default:
-                // Unsupported storage type
                 return new EconomyResponse(0, 0, EconomyResponse.ResponseType.FAILURE, "Unsupported storage type");
         }
     }
 
+    private EconomyResponse withdrawLocal(String playerName, double value) {
+        double playerBalance = getBalance(playerName);
+
+        if (playerBalance < value) {
+            return new EconomyResponse(0, playerBalance, EconomyResponse.ResponseType.FAILURE, "Player does not have enough money");
+        }
+
+        // Vérification pour éviter un solde négatif
+        if (playerBalance - value < 0) {
+            return new EconomyResponse(0, playerBalance, EconomyResponse.ResponseType.FAILURE, "Withdrawal would result in negative balance");
+        }
+
+        // Retrait réussi
+        balances.put(playerName, playerBalance - value);
+        return new EconomyResponse(value, balances.get(playerName), EconomyResponse.ResponseType.SUCCESS, null);
+    }
+
+    private EconomyResponse withdrawRedis(String playerName, double value) {
+        if (redis.hasAccount(playerName)) {
+            double playerRedisBalance = redis.getBalance(playerName);
+
+            if (playerRedisBalance < value) {
+                return new EconomyResponse(0, playerRedisBalance, EconomyResponse.ResponseType.FAILURE, "Player does not have enough money");
+            }
+
+            // Vérification pour éviter un solde négatif
+            if (playerRedisBalance - value < 0) {
+                return new EconomyResponse(0, playerRedisBalance, EconomyResponse.ResponseType.FAILURE, "Withdrawal would result in negative balance");
+            }
+
+            // Retrait réussi de Redis
+            redis.setBalance(playerName, playerRedisBalance - value);
+            return new EconomyResponse(value, redis.getBalance(playerName), EconomyResponse.ResponseType.SUCCESS, null);
+        } else {
+            return new EconomyResponse(0, 0, EconomyResponse.ResponseType.FAILURE, "Player account not found in Redis");
+        }
+    }
 
     @Override
     public EconomyResponse withdrawPlayer(OfflinePlayer offlinePlayer, double value) {
-        return withdrawPlayer(offlinePlayer.getPlayer(), value);
+        return withdrawPlayer(offlinePlayer.getName(), value);
     }
 
     @Override
-    public EconomyResponse withdrawPlayer(String s, String s1, double value) {
-        // Implement if needed
-        return null;
+    public EconomyResponse withdrawPlayer(String playerName, String world, double value) {
+        return withdrawPlayer(playerName, value);
     }
 
     @Override
-    public EconomyResponse withdrawPlayer(OfflinePlayer offlinePlayer, String s, double value) {
-        // Implement if needed
-        return null;
+    public EconomyResponse withdrawPlayer(OfflinePlayer offlinePlayer, String world, double value) {
+        return withdrawPlayer(offlinePlayer.getName(), value);
     }
 
     @Override
-    public EconomyResponse depositPlayer(String s, double value) {
-        return null;
+    public EconomyResponse depositPlayer(String playerName, double value) {
+        switch (config.getStorageType()) {
+            case "LOCAL":
+                return depositLocal(playerName, value);
+
+            case "REDIS":
+                return depositRedis(playerName, value);
+
+            default:
+                return new EconomyResponse(0, 0, EconomyResponse.ResponseType.FAILURE, "Unsupported storage type");
+        }
+    }
+
+    private EconomyResponse depositLocal(String playerName, double value) {
+        double playerBalance = getBalance(playerName);
+
+        // Deposit successful
+        balances.put(playerName, playerBalance + value);
+        return new EconomyResponse(value, balances.get(playerName), EconomyResponse.ResponseType.SUCCESS, null);
+    }
+
+    private EconomyResponse depositRedis(String playerName, double value) {
+        if (redis.hasAccount(playerName)) {
+            double playerRedisBalance = redis.getBalance(playerName);
+
+            // Deposit successful to Redis
+            redis.setBalance(playerName, playerRedisBalance + value);
+            return new EconomyResponse(value, redis.getBalance(playerName), EconomyResponse.ResponseType.SUCCESS, null);
+        } else {
+            return new EconomyResponse(0, 0, EconomyResponse.ResponseType.FAILURE, "Player account not found in Redis");
+        }
     }
 
     @Override
@@ -196,15 +244,13 @@ public class EcoManager implements Economy {
     }
 
     @Override
-    public EconomyResponse depositPlayer(String s, String s1, double value) {
-        // Implement if needed
-        return null;
+    public EconomyResponse depositPlayer(String playerName, String world, double value) {
+        return depositPlayer(playerName, value);
     }
 
     @Override
-    public EconomyResponse depositPlayer(OfflinePlayer offlinePlayer, String s, double value) {
-        // Implement if needed
-        return null;
+    public EconomyResponse depositPlayer(OfflinePlayer offlinePlayer, String world, double value) {
+        return depositPlayer(offlinePlayer.getName(), value);
     }
 
     @Override
@@ -305,5 +351,9 @@ public class EcoManager implements Economy {
 
     public static void register() {
         Bukkit.getServicesManager().register(Economy.class, new EcoManager(), Main.getInstance(), ServicePriority.Normal);
+    }
+
+    public HashMap<String, Double> getBalances() {
+        return balances;
     }
 }

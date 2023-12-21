@@ -1,9 +1,10 @@
 package net.etum.etumeconomy.Manager;
 
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.io.File;
+import java.util.Objects;
 
 /**
  * This class manages the configuration of the plugin.
@@ -15,6 +16,7 @@ public class ConfigManager {
     private ConfigurationSection storageConfig;
     private ConfigurationSection informationStorageConfig;
     private ConfigurationSection mysqlConfig;
+    private ConfigurationSection bungeeConfig;
 
     /**
      * Constructor for the ConfigManager class.
@@ -27,26 +29,16 @@ public class ConfigManager {
     }
 
     /**
-     * Loads the configuration from the configuration file.
+     * Loads the configuration from the default configuration file.
      */
     private void loadConfig() {
-        // Check if the plugin folder exists, create it if not
-        if (!plugin.getDataFolder().exists() && !plugin.getDataFolder().mkdirs()) {
-            // Handle the folder creation error
-            return;
-        }
-
-        // Create the configuration file if it does not exist
-        File configFile = new File(plugin.getDataFolder(), "config.yml");
-        if (!configFile.exists()) {
-            plugin.saveResource("config.yml", false);
-        }
-
-        // Load the configuration from the YAML file
-        this.redisConfig = plugin.getConfig().getConfigurationSection("redis");
-        this.storageConfig = plugin.getConfig().getConfigurationSection("storage");
-        this.informationStorageConfig = plugin.getConfig().getConfigurationSection("information_storage");
-        this.mysqlConfig = plugin.getConfig().getConfigurationSection("mysql");
+        // Load the default configuration from the plugin
+        FileConfiguration config = plugin.getConfig();
+        this.redisConfig = config.getConfigurationSection("redis");
+        this.storageConfig = config.getConfigurationSection("storage");
+        this.informationStorageConfig = config.getConfigurationSection("information_storage");
+        this.mysqlConfig = config.getConfigurationSection("mysql");
+        this.bungeeConfig = config.getConfigurationSection("bungee");
     }
 
     /**
@@ -91,7 +83,7 @@ public class ConfigManager {
      * @return The storage type
      */
     public String getStorageType() {
-        return storageConfig.getString("type");
+        return Objects.requireNonNull(storageConfig.getString("type")).toUpperCase();
     }
 
     /**
@@ -100,7 +92,7 @@ public class ConfigManager {
      * @return The information storage format
      */
     public String getInformationStorageFormat() {
-        return informationStorageConfig.getString("format");
+        return Objects.requireNonNull(informationStorageConfig.getString("format")).toUpperCase();
     }
 
     /**
@@ -146,5 +138,9 @@ public class ConfigManager {
      */
     public String getMysqlDatabase() {
         return mysqlConfig.getString("database");
+    }
+
+    public boolean isBungeeEnabled() {
+        return bungeeConfig.getBoolean("enabled", false);
     }
 }

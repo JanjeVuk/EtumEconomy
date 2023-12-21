@@ -1,18 +1,58 @@
+# Redis Configuration
+# Configure the connection to your Redis server.
 redis:
-  host: "localhost"  # Mettez l'adresse IP ou le nom d'hôte de votre serveur Redis
-  port: 6379         # Mettez le port Redis approprié
-  password: password # Mettez le Password Redis approprié
-  timeout: 2000  # Mettez le Timeout Redis approprié
+  # Set the IP address or hostname of your Redis server.
+  host: "localhost"
 
+  # Set the appropriate Redis port.
+  port: 6379
+
+  # Set the Redis password if required.
+  password: "password"
+
+  # Set the Redis connection timeout in milliseconds.
+  timeout: 2000
+
+# Storage Configuration
+# Specify the type of data storage (local or Redis).
 storage:
-  type: "local"      # "local" pour stocker en local, "redis" pour stocker sur un serveur Redis
+  # Use "local" to store data locally, "redis" to store on a Redis server.
+  type: "local"
 
+# Information Storage Configuration
+# Specify the format for storing information (yaml or mysql).
 information_storage:
-  format: "yaml"     # "yaml" pour stocker dans un fichier YAML, "mysql" pour stocker dans MySQL
+  # Use "yaml" to store in a YAML file, "mysql" to store in MySQL.
+  format: "yaml"
 
+# MySQL Configuration
+# Configure the connection to your MySQL server.
 mysql:
-  host: "localhost"  # Mettez l'adresse IP ou le nom d'hôte de votre serveur MySQL
-  port: 3306         # Mettez le port MySQL approprié
-  user: "username"   # Mettez le nom d'utilisateur MySQL
-  password: "password" # Mettez le mot de passe MySQL
-  database: "database_name" # Mettez le nom de la base de données MySQL
+  # Set the IP address or hostname of your MySQL server.
+  host: "localhost"
+
+  # Set the appropriate MySQL port.
+  port: 3306
+
+  # Set the MySQL username.
+  user: "username"
+
+  # Set the MySQL password.
+  password: "password"
+
+  # Set the name of the MySQL database.
+  database: "database_name"
+
+# Bungee Configuration
+bungee:
+  # Enable or disable BungeeCord connection verification.
+  # When enabled, the plugin checks if the player data is saved when leaving the server or the BungeeCord proxy.
+  enabled: false # Change to false if you don't want to enable BungeeCord connection verification
+
+
+# Explanation:
+# - Redis: Configuration for the Redis server.
+# - Storage: Specifies the type of storage (local or Redis).
+# - Information Storage: Specifies the format for storing information (yaml or mysql).
+# - MySQL: Configuration for the MySQL server.
+# - Bungee: Configuration related to BungeeCord connection verification.
