@@ -59,14 +59,11 @@ public class EcoManager implements Economy {
 
     @Override
     public boolean hasAccount(String playerName) {
-        switch (config.getStorageType()) {
-            case "LOCAL":
-                return balances.containsKey(playerName);
-            case "REDIS":
-                return redis.hasAccount(playerName);
-            default:
-                return false;
-        }
+        return switch (config.getStorageType()) {
+            case "LOCAL" -> balances.containsKey(playerName);
+            case "REDIS" -> redis.hasAccount(playerName);
+            default -> false;
+        };
     }
 
     @Override
@@ -88,14 +85,11 @@ public class EcoManager implements Economy {
 
     @Override
     public double getBalance(String playerName) {
-        switch (config.getStorageType()) {
-            case "LOCAL":
-                return balances.getOrDefault(playerName, 0.0);
-            case "REDIS":
-                return redis.getBalance(playerName);
-            default:
-                return 0.0;
-        }
+        return switch (config.getStorageType()) {
+            case "LOCAL" -> balances.getOrDefault(playerName, 0.0);
+            case "REDIS" -> redis.getBalance(playerName);
+            default -> 0.0;
+        };
     }
 
     @Override
@@ -139,16 +133,11 @@ public class EcoManager implements Economy {
 
     @Override
     public EconomyResponse withdrawPlayer(String playerName, double value) {
-        switch (config.getStorageType()) {
-            case "LOCAL":
-                return withdrawLocal(playerName, value);
-
-            case "REDIS":
-                return withdrawRedis(playerName, value);
-
-            default:
-                return new EconomyResponse(0, 0, EconomyResponse.ResponseType.FAILURE, "Unsupported storage type");
-        }
+        return switch (config.getStorageType()) {
+            case "LOCAL" -> withdrawLocal(playerName, value);
+            case "REDIS" -> withdrawRedis(playerName, value);
+            default -> new EconomyResponse(0, 0, EconomyResponse.ResponseType.FAILURE, "Unsupported storage type");
+        };
     }
 
     private EconomyResponse withdrawLocal(String playerName, double value) {
@@ -206,16 +195,11 @@ public class EcoManager implements Economy {
 
     @Override
     public EconomyResponse depositPlayer(String playerName, double value) {
-        switch (config.getStorageType()) {
-            case "LOCAL":
-                return depositLocal(playerName, value);
-
-            case "REDIS":
-                return depositRedis(playerName, value);
-
-            default:
-                return new EconomyResponse(0, 0, EconomyResponse.ResponseType.FAILURE, "Unsupported storage type");
-        }
+        return switch (config.getStorageType()) {
+            case "LOCAL" -> depositLocal(playerName, value);
+            case "REDIS" -> depositRedis(playerName, value);
+            default -> new EconomyResponse(0, 0, EconomyResponse.ResponseType.FAILURE, "Unsupported storage type");
+        };
     }
 
     private EconomyResponse depositLocal(String playerName, double value) {
@@ -353,7 +337,4 @@ public class EcoManager implements Economy {
         Bukkit.getServicesManager().register(Economy.class, new EcoManager(), Main.getInstance(), ServicePriority.Normal);
     }
 
-    public HashMap<String, Double> getBalances() {
-        return balances;
-    }
 }

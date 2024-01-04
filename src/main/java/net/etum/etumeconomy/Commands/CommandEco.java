@@ -32,7 +32,7 @@ public class CommandEco implements TabExecutor {
 
         String subCommand = args[0].toLowerCase();
 
-        if (Arrays.asList("give", "set", "take", "reset", "balance", "top").contains(subCommand)) {
+        if (List.of("give", "set", "take", "reset", "balance", "top").contains(subCommand)) {
             switch (subCommand) {
                 case "give":
                 case "set":
@@ -91,7 +91,7 @@ public class CommandEco implements TabExecutor {
     }
 
     private boolean validatePlayer(CommandSender sender, Player player) {
-        if (player == null || !player.isOnline()) {
+        if (player == null) {
             sender.sendMessage(ChatColor.RED + "The specified player is not online.");
             return false;
         }
@@ -134,7 +134,7 @@ public class CommandEco implements TabExecutor {
         List<String> completions = new ArrayList<>();
 
         if (args.length == 1) {
-            completions.addAll(Arrays.asList("give", "set", "take", "reset", "balance", "top"));
+            completions.addAll(List.of("give", "set", "take", "reset", "balance", "top"));
         } else if (args.length == 2) {
             completions.addAll(Bukkit.getOnlinePlayers().stream().map(Player::getName).toList());
         }

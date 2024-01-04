@@ -5,11 +5,17 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Objects;
+import java.util.Optional;
 
 /**
- * This class manages the configuration of the plugin.
+ * This class manages the configuration of the plugin (improved version).
  */
 public class ConfigManager {
+
+    private static final int REDIS_DEFAULT_PORT = 6379;
+    private static final int REDIS_DEFAULT_TIMEOUT = 2000;
+    private static final int MYSQL_DEFAULT_PORT = 3306;
+    private static final boolean BUNGEE_DEFAULT_ENABLED = false;
 
     private final JavaPlugin plugin;
     private ConfigurationSection redisConfig;
@@ -34,113 +40,58 @@ public class ConfigManager {
     private void loadConfig() {
         // Load the default configuration from the plugin
         FileConfiguration config = plugin.getConfig();
-        this.redisConfig = config.getConfigurationSection("redis");
-        this.storageConfig = config.getConfigurationSection("storage");
-        this.informationStorageConfig = config.getConfigurationSection("information_storage");
-        this.mysqlConfig = config.getConfigurationSection("mysql");
-        this.bungeeConfig = config.getConfigurationSection("bungee");
+        Optional.ofNullable(config.getConfigurationSection("redis")).ifPresent(conf -> this.redisConfig = conf);
+        Optional.ofNullable(config.getConfigurationSection("storage")).ifPresent(conf -> this.storageConfig = conf);
+        Optional.ofNullable(config.getConfigurationSection("information_storage")).ifPresent(conf -> this.informationStorageConfig = conf);
+        Optional.ofNullable(config.getConfigurationSection("mysql")).ifPresent(conf -> this.mysqlConfig = conf);
+        Optional.ofNullable(config.getConfigurationSection("bungee")).ifPresent(conf -> this.bungeeConfig = conf);
     }
 
-    /**
-     * Gets the Redis host from the configuration.
-     *
-     * @return The Redis host
-     */
     public String getRedisHost() {
-        return redisConfig.getString("host");
+        return Optional.ofNullable(redisConfig.getString("host")).orElse("");
     }
 
-    /**
-     * Gets the Redis port from the configuration.
-     *
-     * @return The Redis port
-     */
     public int getRedisPort() {
-        return redisConfig.getInt("port", 6379);
+        return redisConfig.getInt("port", REDIS_DEFAULT_PORT);
     }
 
-    /**
-     * Gets the Redis password from the configuration.
-     *
-     * @return The Redis password
-     */
     public String getRedisPassword() {
-        return redisConfig.getString("password");
+        return Optional.ofNullable(redisConfig.getString("password")).orElse("");
     }
 
-    /**
-     * Gets the Redis timeout from the configuration.
-     *
-     * @return The Redis timeout
-     */
     public int getRedisTimeout() {
-        return redisConfig.getInt("timeout", 2000);
+        return redisConfig.getInt("timeout", REDIS_DEFAULT_TIMEOUT);
     }
 
-    /**
-     * Gets the storage type from the configuration.
-     *
-     * @return The storage type
-     */
     public String getStorageType() {
-        return Objects.requireNonNull(storageConfig.getString("type")).toUpperCase();
+        return Optional.ofNullable(storageConfig.getString("type")).orElse("").toUpperCase();
     }
 
-    /**
-     * Gets the information storage format from the configuration.
-     *
-     * @return The information storage format
-     */
     public String getInformationStorageFormat() {
-        return Objects.requireNonNull(informationStorageConfig.getString("format")).toUpperCase();
+        return Optional.ofNullable(informationStorageConfig.getString("format")).orElse("").toUpperCase();
     }
 
-    /**
-     * Gets the MySQL host from the configuration.
-     *
-     * @return The MySQL host
-     */
     public String getMysqlHost() {
-        return mysqlConfig.getString("host");
+        return Optional.ofNullable(mysqlConfig.getString("host")).orElse("");
     }
 
-    /**
-     * Gets the MySQL port from the configuration.
-     *
-     * @return The MySQL port
-     */
     public int getMysqlPort() {
-        return mysqlConfig.getInt("port", 3306);
+        return mysqlConfig.getInt("port", MYSQL_DEFAULT_PORT);
     }
 
-    /**
-     * Gets the MySQL username from the configuration.
-     *
-     * @return The MySQL username
-     */
     public String getMysqlUser() {
-        return mysqlConfig.getString("user");
+        return Optional.ofNullable(mysqlConfig.getString("user")).orElse("");
     }
 
-    /**
-     * Gets the MySQL password from the configuration.
-     *
-     * @return The MySQL password
-     */
     public String getMysqlPassword() {
-        return mysqlConfig.getString("password");
+        return Optional.ofNullable(mysqlConfig.getString("password")).orElse("");
     }
 
-    /**
-     * Gets the MySQL database name from the configuration.
-     *
-     * @return The MySQL database name
-     */
     public String getMysqlDatabase() {
-        return mysqlConfig.getString("database");
+        return Optional.ofNullable(mysqlConfig.getString("database")).orElse("");
     }
 
     public boolean isBungeeEnabled() {
-        return bungeeConfig.getBoolean("enabled", false);
+        return bungeeConfig.getBoolean("enabled", BUNGEE_DEFAULT_ENABLED);
     }
 }
