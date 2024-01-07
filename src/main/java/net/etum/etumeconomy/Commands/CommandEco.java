@@ -1,4 +1,4 @@
-package net.etum.etumeconomy.commands;
+package net.etum.etumeconomy.Commands;
 
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;

@@ -2,3 +2,5 @@ name: EtumEconomy
 version: '${project.version}'
 main: net.etum.etumeconomy.Main
 api-version: '1.20'
+loadbefore:
+  - EtumAtrium
