@@ -1,26 +1,33 @@
 package net.etum.etumeconomy.Manager;
 
-import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.io.File;
+import java.util.Objects;
+import java.util.Optional;
 
 /**
- * Cette classe gère la configuration du plugin.
+ * This class manages the configuration of the plugin (improved version).
  */
 public class ConfigManager {
+
+    private static final int REDIS_DEFAULT_PORT = 6379;
+    private static final int REDIS_DEFAULT_TIMEOUT = 2000;
+    private static final int MYSQL_DEFAULT_PORT = 3306;
+    private static final boolean BUNGEE_DEFAULT_ENABLED = false;
 
     private final JavaPlugin plugin;
     private ConfigurationSection redisConfig;
     private ConfigurationSection storageConfig;
     private ConfigurationSection informationStorageConfig;
     private ConfigurationSection mysqlConfig;
+    private ConfigurationSection bungeeConfig;
 
     /**
-     * Constructeur de la classe ConfigManager.
+     * Constructor for the ConfigManager class.
      *
-     * @param plugin Instance du plugin
+     * @param plugin The plugin instance
      */
     public ConfigManager(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -28,108 +35,63 @@ public class ConfigManager {
     }
 
     /**
-     * Charge la configuration depuis le fichier de configuration.
+     * Loads the configuration from the default configuration file.
      */
     private void loadConfig() {
-        // Vérifie si le dossier du plugin existe, sinon le crée
-        if (!plugin.getDataFolder().exists()) {
-            if(!plugin.getDataFolder().mkdirs()){
-                Bukkit.getLogger().warning("Le dossier ne peut être créé");
-                return;
-            }
-        }
-
-        // Crée le fichier de configuration s'il n'existe pas
-        File configFile = new File(plugin.getDataFolder(), "config.yml");
-        if (!configFile.exists()) {
-            plugin.saveResource("config.yml", false);
-        }
-
-        // Charge la configuration depuis le fichier YAML
-        this.redisConfig = plugin.getConfig().getConfigurationSection("redis");
-        this.storageConfig = plugin.getConfig().getConfigurationSection("storage");
-        this.informationStorageConfig = plugin.getConfig().getConfigurationSection("information_storage");
-        this.mysqlConfig = plugin.getConfig().getConfigurationSection("mysql");
+        // Load the default configuration from the plugin
+        FileConfiguration config = plugin.getConfig();
+        Optional.ofNullable(config.getConfigurationSection("redis")).ifPresent(conf -> this.redisConfig = conf);
+        Optional.ofNullable(config.getConfigurationSection("storage")).ifPresent(conf -> this.storageConfig = conf);
+        Optional.ofNullable(config.getConfigurationSection("information_storage")).ifPresent(conf -> this.informationStorageConfig = conf);
+        Optional.ofNullable(config.getConfigurationSection("mysql")).ifPresent(conf -> this.mysqlConfig = conf);
+        Optional.ofNullable(config.getConfigurationSection("bungee")).ifPresent(conf -> this.bungeeConfig = conf);
     }
 
-    /**
-     * Obtient l'hôte Redis depuis la configuration.
-     *
-     * @return L'hôte Redis
-     */
     public String getRedisHost() {
-        return redisConfig.getString("host");
+        return Optional.ofNullable(redisConfig.getString("host")).orElse("");
     }
 
-    /**
-     * Obtient le port Redis depuis la configuration.
-     *
-     * @return Le port Redis
-     */
     public int getRedisPort() {
-        return redisConfig.getInt("port", 6379);
+        return redisConfig.getInt("port", REDIS_DEFAULT_PORT);
     }
 
-    /**
-     * Obtient le type de stockage depuis la configuration.
-     *
-     * @return Le type de stockage
-     */
+    public String getRedisPassword() {
+        return Optional.ofNullable(redisConfig.getString("password")).orElse("");
+    }
+
+    public int getRedisTimeout() {
+        return redisConfig.getInt("timeout", REDIS_DEFAULT_TIMEOUT);
+    }
+
     public String getStorageType() {
-        return storageConfig.getString("type");
+        return Optional.ofNullable(storageConfig.getString("type")).orElse("").toUpperCase();
     }
 
-    /**
-     * Obtient le format de stockage d'informations depuis la configuration.
-     *
-     * @return Le format de stockage d'informations
-     */
     public String getInformationStorageFormat() {
-        return informationStorageConfig.getString("format");
+        return Optional.ofNullable(informationStorageConfig.getString("format")).orElse("").toUpperCase();
     }
 
-    /**
-     * Obtient l'hôte MySQL depuis la configuration.
-     *
-     * @return L'hôte MySQL
-     */
     public String getMysqlHost() {
-        return mysqlConfig.getString("host");
+        return Optional.ofNullable(mysqlConfig.getString("host")).orElse("");
     }
 
-    /**
-     * Obtient le port MySQL depuis la configuration.
-     *
-     * @return Le port MySQL
-     */
     public int getMysqlPort() {
-        return mysqlConfig.getInt("port", 3306);
+        return mysqlConfig.getInt("port", MYSQL_DEFAULT_PORT);
     }
 
-    /**
-     * Obtient le nom d'utilisateur MySQL depuis la configuration.
-     *
-     * @return Le nom d'utilisateur MySQL
-     */
     public String getMysqlUser() {
-        return mysqlConfig.getString("user");
+        return Optional.ofNullable(mysqlConfig.getString("user")).orElse("");
     }
 
-    /**
-     * Obtient le mot de passe MySQL depuis la configuration.
-     *
-     * @return Le mot de passe MySQL
-     */
     public String getMysqlPassword() {
-        return mysqlConfig.getString("password");
+        return Optional.ofNullable(mysqlConfig.getString("password")).orElse("");
     }
 
-    /**
-     * Obtient le nom de la base de données MySQL depuis la configuration.
-     *
-     * @return Le nom de la base de données MySQL
-     */
     public String getMysqlDatabase() {
-        return mysqlConfig.getString("database");
+        return Optional.ofNullable(mysqlConfig.getString("database")).orElse("");
+    }
+
+    public boolean isBungeeEnabled() {
+        return bungeeConfig.getBoolean("enabled", BUNGEE_DEFAULT_ENABLED);
     }
 }

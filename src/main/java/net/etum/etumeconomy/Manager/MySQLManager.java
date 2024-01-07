@@ -1,94 +1,117 @@
 package net.etum.etumeconomy.Manager;
 
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import org.bukkit.Bukkit;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-/**
- * Cette classe gère les opérations de base sur une base de données MySQL.
- */
 public class MySQLManager {
 
-    // URL de connexion à la base de données MySQL
-    private final String url;
+    private final HikariDataSource dataSource;
 
-    // Nom d'utilisateur pour la connexion à la base de données MySQL
-    private final String user;
-
-    // Mot de passe pour la connexion à la base de données MySQL
-    private final String password;
+    // Constantes pour les requêtes SQL
+    private static final String INSERT_OR_UPDATE_QUERY =
+            "INSERT INTO %s (%s, %s) VALUES (?, ?) ON DUPLICATE KEY UPDATE %s=?";
+    private static final String SELECT_QUERY =
+            "SELECT %s FROM %s WHERE %s=?";
 
     /**
-     * Constructeur de la classe MySQLManager.
+     * Constructor for the MySQLManager class.
      *
-     * @param host     Adresse IP ou nom d'hôte du serveur MySQL
-     * @param port     Port du serveur MySQL
-     * @param user     Nom d'utilisateur MySQL
-     * @param password Mot de passe MySQL
-     * @param database Nom de la base de données MySQL
+     * @param host     IP address or hostname of the MySQL server
+     * @param port     Port of the MySQL server
+     * @param user     MySQL username
+     * @param password MySQL password
+     * @param database MySQL database name
      */
     public MySQLManager(String host, int port, String user, String password, String database) {
-        // Construction de l'URL de connexion à la base de données MySQL
-        this.url = "jdbc:mysql://" + host + ":" + port + "/" + database;
-        this.user = user;
-        this.password = password;
+        HikariConfig config = new HikariConfig();
+        config.setJdbcUrl("jdbc:mysql://" + host + ":" + port + "/" + database);
+        config.setUsername(user);
+        config.setPassword(password);
+        config.setMaximumPoolSize(10); // Adjust as needed
+
+        this.dataSource = new HikariDataSource(config);
     }
 
     /**
-     * Insère ou met à jour une entrée dans la table spécifiée.
+     * Inserts or updates an entry in the specified table.
      *
-     * @param tableName    Nom de la table MySQL
-     * @param keyColumn    Nom de la colonne pour la clé
-     * @param valueColumn  Nom de la colonne pour la valeur
-     * @param key          Clé à insérer ou mettre à jour
-     * @param value        Valeur associée à la clé
+     * @param tableName   Name of the MySQL table
+     * @param keyColumn   Name of the column for the key
+     * @param valueColumn Name of the column for the value
+     * @param key         Key to insert or update
+     * @param value       Value associated with the key
      */
     public void insertOrUpdate(String tableName, String keyColumn, String valueColumn, String key, String value) {
-        try (Connection connection = DriverManager.getConnection(url, user, password)) {
-            // Requête SQL pour insérer ou mettre à jour une entrée dans la table
-            String query = "INSERT INTO " + tableName + " (" + keyColumn + ", " + valueColumn + ") VALUES (?, ?) " +
-                    "ON DUPLICATE KEY UPDATE " + valueColumn + "=?";
-            try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
-                preparedStatement.setString(1, key);
-                preparedStatement.setString(2, value);
-                preparedStatement.setString(3, value);
-                preparedStatement.executeUpdate();
-            }
+        String query = String.format(INSERT_OR_UPDATE_QUERY, tableName, keyColumn, valueColumn, valueColumn);
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            // Utiliser une transaction pour garantir l'intégrité des données
+            connection.setAutoCommit(false);
+            preparedStatement.setString(1, key);
+            preparedStatement.setString(2, value);
+            preparedStatement.setString(3, value);
+            preparedStatement.executeUpdate();
+            connection.commit(); // Valider la transaction
         } catch (SQLException e) {
-            // En cas d'erreur, afficher un avertissement dans la console Bukkit
-            Bukkit.getLogger().warning(e.getMessage());
+            handleSQLException(e);
         }
     }
 
     /**
-     * Récupère la valeur associée à une clé dans la table spécifiée.
+     * Retrieves the value associated with a key in the specified table.
      *
-     * @param tableName   Nom de la table MySQL
-     * @param keyColumn   Nom de la colonne pour la clé
-     * @param valueColumn Nom de la colonne pour la valeur
-     * @param key         Clé à rechercher
-     * @return La valeur associée à la clé, ou null si la clé n'est pas trouvée
+     * @param tableName   Name of the MySQL table
+     * @param keyColumn   Name of the column for the key
+     * @param valueColumn Name of the column for the value
+     * @param key         Key to search for
+     * @return The value associated with the key, or null if the key is not found
      */
     public String get(String tableName, String keyColumn, String valueColumn, String key) {
-        try (Connection connection = DriverManager.getConnection(url, user, password)) {
-            // Requête SQL pour sélectionner la valeur associée à une clé
-            String query = "SELECT " + valueColumn + " FROM " + tableName + " WHERE " + keyColumn + "=?";
-            try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
-                preparedStatement.setString(1, key);
-                try (ResultSet resultSet = preparedStatement.executeQuery()) {
-                    if (resultSet.next()) {
-                        return resultSet.getString(valueColumn);
-                    }
+        String query = String.format(SELECT_QUERY, valueColumn, tableName, keyColumn);
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setString(1, key);
+            try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                if (resultSet.next()) {
+                    return resultSet.getString(valueColumn);
                 }
             }
         } catch (SQLException e) {
-            // En cas d'erreur, afficher un avertissement dans la console Bukkit
-            Bukkit.getLogger().warning(e.getMessage());
+            handleSQLException(e);
         }
         return null;
+    }
+
+    /**
+     * Handle SQLException and log the error message.
+     *
+     * @param e SQLException
+     */
+    private void handleSQLException(SQLException e) {
+        // Annuler la transaction en cas d'erreur
+        try {
+            if (dataSource != null && dataSource.getConnection() != null) {
+                dataSource.getConnection().rollback();
+            }
+        } catch (SQLException ex) {
+            Bukkit.getLogger().warning("Error rolling back transaction: " + ex.getMessage());
+        }
+
+        Bukkit.getLogger().warning("Error executing SQL query: " + e.getMessage());
+    }
+
+    /**
+     * Close the HikariCP data source when the plugin is disabled.
+     */
+    public void closeDataSource() {
+        if (dataSource != null && !dataSource.isClosed()) {
+            dataSource.close();
+        }
     }
 }

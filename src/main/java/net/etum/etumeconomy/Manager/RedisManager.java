@@ -1,78 +1,181 @@
 package net.etum.etumeconomy.Manager;
 
+import net.etum.etumeconomy.Main;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Cette classe gère les opérations sur un serveur Redis pour stocker les soldes des utilisateurs.
+ * This class manages operations on a Redis server to store user balances.
  */
 public class RedisManager {
 
-    // Instance de la connexion Jedis pour communiquer avec le serveur Redis
-    private final JedisPool jedisPool;
+    private static final Logger logger = LoggerFactory.getLogger(RedisManager.class);
+
+    // Jedis pool instance to communicate with the Redis server
+    private JedisPool jedisPool;
+
+    // Flag to indicate whether to use Redis storage or not
+    private boolean useRedis;
 
     /**
-     * Constructeur de la classe RedisManager avec mot de passe.
-     *
-     * @param host     Adresse IP ou nom d'hôte du serveur Redis
-     * @param port     Port du serveur Redis
-     * @param password Mot de passe du serveur Redis
+     * Constructor for the RedisManager class.
      */
-    public RedisManager(String host, int port, String password) {
-        // Configuration du pool Jedis
-        JedisPoolConfig poolConfig = new JedisPoolConfig();
-        // Vous pouvez ajuster la configuration du pool selon vos besoins
+    public RedisManager(ConfigManager configManager) {
+        // Check the storage type
+        String storageType = configManager.getStorageType();
+        useRedis = storageType.equalsIgnoreCase("REDIS");
 
-        // Initialisation du pool Jedis avec mot de passe
-        this.jedisPool = new JedisPool(poolConfig, host, port, 2000, password);
+        // If using Redis, initialize the Jedis pool
+        if (useRedis) {
+            initializeJedisPool(configManager);
+        }
     }
 
     /**
-     * Ferme la connexion avec le serveur Redis.
+     * Initializes the Jedis pool if using Redis storage.
+     */
+    private void initializeJedisPool(ConfigManager configManager) {
+        // Jedis pool configuration
+        JedisPoolConfig poolConfig = new JedisPoolConfig();
+
+        // Initialize the Jedis pool with a password
+        this.jedisPool = new JedisPool(poolConfig, configManager.getRedisHost(), configManager.getRedisPort(), configManager.getRedisTimeout(), configManager.getRedisPassword());
+
+        // Check and reconnect if the connection is closed during the creation of the RedisManager object
+        checkAndReconnect(configManager);
+    }
+
+    /**
+     * Checks if the Jedis connection is closed and reconnects if necessary.
+     */
+    private void checkAndReconnect(ConfigManager config) {
+        try (Jedis jedis = jedisPool.getResource()) {
+            // Check if the connection is closed or if the ping to the server fails
+            if (!jedis.isConnected() || !pingServer(jedis)) {
+                // Log a warning message
+                logger.warn("Connection to Redis is closed or ping to the server failed. Reconnecting...");
+
+                // Close the existing pool
+                close();
+
+                // Reconnect the connection
+                initializeJedisPool(config);
+
+                // Log an info message
+                logger.info("Reconnection to Redis successful.");
+            }
+        } catch (Exception e) {
+            // Log an error message if an exception occurs
+            logger.error("Error during Redis connection check and reconnect.", e);
+        }
+    }
+
+    /**
+     * Checks if the Redis server is accessible by sending a ping.
+     *
+     * @param jedis Jedis connection
+     * @return true if the ping succeeds, false otherwise
+     */
+    private boolean pingServer(Jedis jedis) {
+        try {
+            return "PONG".equals(jedis.ping());
+        } catch (Exception e) {
+            // Log an error message if an exception occurs
+            logger.error("Error during Redis ping.", e);
+            return false;
+        }
+    }
+
+    /**
+     * Closes the connection with the Redis server.
      */
     public void close() {
-        // Fermeture du pool Jedis
-        jedisPool.close();
-    }
-
-    /**
-     * Ajoute ou met à jour le solde d'un utilisateur.
-     *
-     * @param uuid   UUID de l'utilisateur
-     * @param amount Montant à définir pour l'utilisateur
-     */
-    public void setBalance(String uuid, String amount) {
-        try (Jedis jedis = jedisPool.getResource()) {
-            // Utilisation de la méthode hset de Jedis pour ajouter ou mettre à jour le solde dans l'objet balance
-            jedis.hset("balances", uuid, amount);
+        try {
+            // Close the Jedis pool
+            jedisPool.close();
+        } catch (Exception e) {
+            // Log an error message if an exception occurs
+            logger.error("Error during Redis connection close.", e);
         }
     }
 
     /**
-     * Récupère le solde d'un utilisateur.
+     * Adds or updates a user's balance.
      *
-     * @param uuid UUID de l'utilisateur
-     * @return Le solde de l'utilisateur, ou null si l'utilisateur n'a pas de solde défini
+     * @param playerName User Name
+     * @param amount     Amount to set for the user
      */
-    public String getBalance(String uuid) {
+    public void setBalance(String playerName, double amount) {
         try (Jedis jedis = jedisPool.getResource()) {
-            // Utilisation de la méthode hget de Jedis pour récupérer le solde de l'utilisateur depuis l'objet balance
-            return jedis.hget("balances", uuid);
+            // Use the hset method of Jedis to add or update the balance in the balances object
+            jedis.hset("balances", playerName, String.valueOf(amount));
+        } catch (Exception e) {
+            // Log an error message if an exception occurs
+            logger.error("Error during setBalance operation.", e);
         }
     }
 
     /**
-     * Récupère tous les soldes d'utilisateurs.
+     * Retrieves the balance of a user.
      *
-     * @return Une carte (Map) des soldes avec les UUID comme clés et les montants comme valeurs
+     * @param playerName User Name
+     * @return The user's balance, or 0.0 if the user has no defined balance
      */
-    public Map<String, String> getAllBalances() {
+    public double getBalance(String playerName) {
         try (Jedis jedis = jedisPool.getResource()) {
-            // Utilisation de la méthode hgetAll de Jedis pour récupérer tous les soldes d'utilisateurs depuis l'objet balance
-            return jedis.hgetAll("balances");
+            // Use the hget method of Jedis to retrieve the user's balance from the balances object
+            String balance = jedis.hget("balances", playerName);
+            return balance != null ? Double.parseDouble(balance) : 0.0;
+        } catch (Exception e) {
+            // Log an error message if an exception occurs
+            logger.error("Error during getBalance operation.", e);
+            return 0.0;
+        }
+    }
+
+    /**
+     * Vérifie si un compte avec un solde est associé au nom d'un joueur.
+     *
+     * @param playerName Nom du joueur
+     * @return true si un compte existe, false sinon
+     */
+    public boolean hasAccount(String playerName) {
+        try (Jedis jedis = jedisPool.getResource()) {
+            // Utilise la méthode hexists de Jedis pour vérifier si le joueur a un compte dans l'objet "balances"
+            return jedis.hexists("balances", playerName);
+        } catch (Exception e) {
+            // Journalise un message d'erreur en cas d'exception
+            logger.error("Erreur lors de la vérification de l'existence du compte.", e);
+            return false;
+        }
+    }
+
+    /**
+     * Retrieves all user balances.
+     *
+     * @return A map of balances with player names as keys and amounts as values
+     */
+    public Map<String, Double> getAllBalances() {
+        try (Jedis jedis = jedisPool.getResource()) {
+            // Use the hgetAll method of Jedis to retrieve all user balances from the balances object
+            Map<String, String> redisBalances = jedis.hgetAll("balances");
+            Map<String, Double> result = new HashMap<>();
+            for (Map.Entry<String, String> entry : redisBalances.entrySet()) {
+                result.put(entry.getKey(), Double.parseDouble(entry.getValue()));
+            }
+            return result;
+        } catch (Exception e) {
+            // Log an error message if an exception occurs
+            logger.error("Error during getAllBalances operation.", e);
+            return Collections.emptyMap();
         }
     }
 }
+
